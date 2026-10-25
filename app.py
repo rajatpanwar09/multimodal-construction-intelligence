@@ -107,7 +107,7 @@ def load_image(uploaded) -> Image.Image:
     """Open an uploaded file, normalise to RGB and cap size for API efficiency."""
     img = Image.open(uploaded)
     img = img.convert("RGB")
-    img.thumbnail((1600, 1600))
+    img.thumbnail((1280, 1280), Image.Resampling.LANCZOS)
     return img
 
 
