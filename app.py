@@ -497,17 +497,58 @@ def render_sidebar():
 # Tab 1 - Safety & PPE
 # ----------------------------------------------------------------------------
 def normalise_safety(d: dict) -> dict:
+    """Ensure safety report fields have safe defaults and consistent types."""
     d = d if isinstance(d, dict) else {}
+
     d["safety_score"] = int(clamp(d.get("safety_score"), 0, 100, 0))
-    d.setdefault("overall_status", "Needs Improvement")
-    d.setdefault("workers_detected", 0)
-    d.setdefault("summary", "")
-    ppe = d.get("ppe_detection") or {}
-    for item in ("helmet", "high_vis_vest", "steel_toe_boots", "safety_harness"):
-        ppe.setdefault(item, {"status": "Not Visible", "remarks": ""})
+    d["overall_status"] = str(
+        d.get("overall_status") or "Needs Improvement"
+    )
+    d["workers_detected"] = int(
+        clamp(d.get("workers_detected"), 0, 10000, 0)
+    )
+    d["summary"] = str(d.get("summary") or "")
+
+    ppe = d.get("ppe_detection")
+    if not isinstance(ppe, dict):
+        ppe = {}
+
+    for item in (
+        "helmet",
+        "high_vis_vest",
+        "steel_toe_boots",
+        "safety_harness",
+    ):
+        value = ppe.get(item)
+        if not isinstance(value, dict):
+            value = {}
+
+        value["status"] = str(value.get("status") or "Not Visible")
+        value["remarks"] = str(value.get("remarks") or "")
+        ppe[item] = value
+
     d["ppe_detection"] = ppe
-    d["hazards"] = d.get("hazards") or []
+
+    hazards = d.get("hazards")
+    if not isinstance(hazards, list):
+        hazards = []
+
+    d["hazards"] = [
+        {
+            "hazard": str(h.get("hazard") or "Unspecified hazard"),
+            "severity": str(h.get("severity") or "Low"),
+            "location": str(h.get("location") or "Not specified"),
+            "remedy": str(h.get("remedy") or "Review on site"),
+            "standard_reference": str(
+                h.get("standard_reference") or "General best practice"
+            ),
+        }
+        for h in hazards
+        if isinstance(h, dict)
+    ]
+
     return d
+
 
 
 def render_safety(report: dict):
