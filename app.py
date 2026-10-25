@@ -111,17 +111,37 @@ def load_image(uploaded) -> Image.Image:
     return img
 
 
+
 def parse_json(text: str) -> dict:
-    """Parse model output as JSON, tolerating markdown fences and stray text."""
+    """Parse and validate JSON returned by the AI model."""
     text = (text or "").strip()
-    text = re.sub(r"^```(?:json)?|```$", "", text, flags=re.MULTILINE).strip()
+
+    # Remove Markdown code fences
+    text = re.sub(
+        r"^```(?:json)?\s*|\s*```$",
+        "",
+        text,
+        flags=re.IGNORECASE
+    ).strip()
+
     try:
-        return json.loads(text)
+        data = json.loads(text)
     except json.JSONDecodeError:
+        # Try extracting a JSON object from surrounding text
         match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-        raise
+        if not match:
+            raise ValueError("The AI response did not contain valid JSON.")
+
+        try:
+            data = json.loads(match.group(0))
+        except json.JSONDecodeError as exc:
+            raise ValueError("The AI returned malformed JSON.") from exc
+
+    if not isinstance(data, dict):
+        raise ValueError("The AI response must be a JSON object.")
+
+    return data
+
 
 
 def clamp(value, lo, hi, default):
