@@ -749,13 +749,32 @@ def tab_crack():
 # ----------------------------------------------------------------------------
 # Tab 3 - Planning & valuation
 # ----------------------------------------------------------------------------
+
 def compute_project(structure: str, sqft: float, tier: str, completion: int) -> dict:
-    s, t = STRUCTURE_TYPES[structure], TIERS[tier]
+    """Calculate construction planning estimates using feature-specific inputs."""
+
+    if structure not in STRUCTURE_TYPES:
+        raise ValueError("Invalid construction structure type.")
+
+    if tier not in TIERS:
+        raise ValueError("Invalid location tier.")
+
+    if not 100 <= sqft <= 1_000_000:
+        raise ValueError("Built-up area must be between 100 and 1,000,000 sq ft.")
+
+    if not 0 <= completion <= 100:
+        raise ValueError("Completion percentage must be between 0 and 100.")
+
+    # Feature context: construction planning and valuation
+    s = STRUCTURE_TYPES[structure]
+    t = TIERS[tier]
     frac = completion / 100
+
     budget = sqft * s["cost"] * t["cost"]
     full_value = sqft * s["market"] * t["market"]
     steel_total = sqft * s["steel"]
     cement_total = sqft * s["cement"]
+
     return {
         "budget": budget,
         "capex": budget * frac,
@@ -768,6 +787,7 @@ def compute_project(structure: str, sqft: float, tier: str, completion: int) -> 
         "cement_used": cement_total * frac,
         "cost_psf": s["cost"] * t["cost"],
     }
+
 
 
 def build_render_prompt(structure: str, sqft: float, tier: str, style: str, completion: int) -> str:
