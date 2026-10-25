@@ -640,19 +640,44 @@ def tab_safety():
 # ----------------------------------------------------------------------------
 # Tab 2 - Crack diagnostics
 # ----------------------------------------------------------------------------
+
 def normalise_crack(d: dict) -> dict:
+    """Ensure crack reports contain frontend-safe fields and types."""
     d = d if isinstance(d, dict) else {}
-    d.setdefault("defect_type", "Hairline")
+
+    d["defect_type"] = str(d.get("defect_type") or "Hairline")
     d["confidence"] = int(clamp(d.get("confidence"), 0, 100, 0))
-    d["estimated_width_mm"] = round(clamp(d.get("estimated_width_mm"), 0, 500, 0.0), 2)
-    d.setdefault("orientation", "n/a")
-    d.setdefault("severity", "Medium")
-    d.setdefault("urgency", "Monitor")
-    d.setdefault("summary", "")
-    d["root_causes"] = d.get("root_causes") or []
-    d["repairs"] = d.get("repairs") or []
-    d.setdefault("monitoring_plan", "")
+    d["estimated_width_mm"] = round(
+        clamp(d.get("estimated_width_mm"), 0, 500, 0.0), 2
+    )
+    d["orientation"] = str(d.get("orientation") or "Not specified")
+    d["severity"] = str(d.get("severity") or "Medium")
+    d["urgency"] = str(d.get("urgency") or "Monitor")
+    d["summary"] = str(d.get("summary") or "")
+    d["monitoring_plan"] = str(d.get("monitoring_plan") or "")
+
+    causes = d.get("root_causes")
+    d["root_causes"] = (
+        [str(c) for c in causes if c is not None]
+        if isinstance(causes, list)
+        else []
+    )
+
+    repairs = d.get("repairs")
+    if not isinstance(repairs, list):
+        repairs = []
+
+    d["repairs"] = [
+        {
+            "method": str(r.get("method") or "Review required"),
+            "description": str(r.get("description") or ""),
+        }
+        for r in repairs
+        if isinstance(r, dict)
+    ]
+
     return d
+
 
 
 def render_crack(r: dict):
